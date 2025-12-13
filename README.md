@@ -1,0 +1,1 @@
+# hotelier-kube-state
