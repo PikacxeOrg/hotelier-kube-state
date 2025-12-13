@@ -1,0 +1,17 @@
+# Development-friendly overrides for Promtail
+daemonset:
+  enabled: false
+replicaCount: 1
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "200m"
+serviceAccount:
+  create: true
+  name: promtail-dev
+
+config:
+  clients: []

@@ -1,0 +1,23 @@
+replicaCount: 1
+persistence:
+  enabled: false
+  size: 2Gi
+  storageClassName: ""
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+config:
+  table_manager:
+    retention_deletes_enabled: false
+  ingester:
+    lifecycler:
+      ring:
+        kvstore:
+          store: inmemory
+  schema_config:
+    configs: []
