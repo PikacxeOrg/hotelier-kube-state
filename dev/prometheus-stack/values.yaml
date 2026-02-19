@@ -28,7 +28,9 @@ alertmanager:
       limits:
         memory: "256Mi"
         cpu: "200m"
-
 grafana:
-  enabled: true
-  adminPassword: "admin"
+  sidecar:
+    datasources:
+      enabled: false
+    dashboards:
+      enabled: false

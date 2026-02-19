@@ -1,22 +1,50 @@
 replicaCount: 1
 
 image:
-  repository: pikaac/identity-service
-  tag: latest
+  repository: hotelier-accommodation-service
+  tag: "latest"
   pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: "1"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+
+env:
+  ASPNETCORE_ENVIRONMENT: "Development"
+  ASPNETCORE_URLS: "http://+:8080"
+  ConnectionStrings__Default: "Host=postgresql.databases.svc.cluster.local;Database=hotelier_identity;Username=hotelier;Password=hotelier;Port=5432"
+  Rabbit__Host: "rabbitmq.databases.svc.cluster.local"
 
 service:
   type: ClusterIP
   port: 80
-  targetPort: 80
-
-resources: {}
+  targetPort: 8080
 
 ingress:
-  enabled: true
-  host: "minikube.local"
-  path: "/identity"
+  hosts:
+    - host: "minikube.local"
+      paths:
+        - path: "/identity"
+          pathType: Prefix
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
 
 serviceMonitor:
   enabled: true
-  interval: 15s
+  interval: 30s

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rating-service
+  namespace: hotelier
+  labels:
+    app: rating-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rating-service
+  template:
+    metadata:
+      labels:
+        app: rating-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: rating-service
+        image: hotelier-rating-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "http://+:8080"
+        - name: ConnectionStrings__Default
+          value: "Host=postgresql.databases.svc.cluster.local;Database=hotelier_rating;Username=hotelier;Password=hotelier;Port=5432"
+        - name: Rabbit__Host
+          value: "rabbitmq.databases.svc.cluster.local"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rating-service
+  namespace: hotelier
+spec:
+  selector:
+    app: rating-service
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP

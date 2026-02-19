@@ -21,3 +21,14 @@ config:
           store: inmemory
   schema_config:
     configs: []
+grafana:
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Loki
+        type: loki
+        access: proxy
+        orgId: 1
+        url: http://loki:3100
+        isDefault: false  # ← CRITICAL

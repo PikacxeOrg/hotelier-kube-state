@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdn-service
+  namespace: hotelier
+  labels:
+    app: cdn-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cdn-service
+  template:
+    metadata:
+      labels:
+        app: cdn-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: cdn-service
+        image: hotelier-cdn-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "http://+:8080"
+        - name: MongoDB__ConnectionString
+          value: "mongodb://mongodb.databases.svc.cluster.local:27017"
+        - name: MongoDB__Database
+          value: "hotelier_cdn"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdn-service
+  namespace: hotelier
+spec:
+  selector:
+    app: cdn-service
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP

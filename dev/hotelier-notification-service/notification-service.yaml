@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: hotelier
+  labels:
+    app: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: notification-service
+        image: hotelier-notification-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "http://+:8080"
+        - name: MongoDB__ConnectionString
+          value: "mongodb://mongodb.databases.svc.cluster.local:27017"
+        - name: MongoDB__Database
+          value: "hotelier_notification"
+        - name: Rabbit__Host
+          value: "rabbitmq.databases.svc.cluster.local"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: hotelier
+spec:
+  selector:
+    app: notification-service
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP

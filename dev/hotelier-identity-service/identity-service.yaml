@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity-service
+  namespace: hotelier
+  labels:
+    app: identity-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity-service
+  template:
+    metadata:
+      labels:
+        app: identity-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: identity-service
+        image: hotelier-identity-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "http://+:8080"
+        - name: ConnectionStrings__Default
+          value: "Host=postgresql.databases.svc.cluster.local;Database=hotelier_identity;Username=hotelier;Password=hotelier;Port=5432"
+        - name: Rabbit__Host
+          value: "rabbitmq.databases.svc.cluster.local"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity-service
+  namespace: hotelier
+spec:
+  selector:
+    app: identity-service
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP

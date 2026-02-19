@@ -2,78 +2,65 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# Install/upgrade script for Hotelier Helm charts
+# Simplified setup script for Hotelier using plain Kubernetes manifests
 
-command -v helm >/dev/null 2>&1 || { echo "helm is required but not installed" >&2; exit 1; }
 command -v kubectl >/dev/null 2>&1 || { echo "kubectl is required but not installed" >&2; exit 1; }
 
-HELM_CHARTS_DIR="helm-charts/"
-NS="hotelier"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "Deploying monitoring stack into 'observability' namespace"
-MON_NS="observability"
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || true
-helm repo add grafana https://grafana.github.io/helm-charts || true
-helm repo update
+echo "Creating namespaces..."
+kubectl create namespace databases --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace observability --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace hotelier --dry-run=client -o yaml | kubectl apply -f -
 
-# Determine values environment
-VALUES_ENV="dev"
+echo ""
+echo "Deploying databases..."
+kubectl apply -f "$SCRIPT_DIR/postgres/postgres.yaml"
+kubectl apply -f "$SCRIPT_DIR/mongo/mongo.yaml"
+kubectl apply -f "$SCRIPT_DIR/rabbitmq/rabbitmq.yaml"
 
-helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-stack -n "$MON_NS" --create-namespace --version 66.7.1 --values kube-state/$VALUES_ENV/prometheus-stack/values.yaml
+echo ""
+echo "Deploying monitoring stack..."
+kubectl apply -f "$SCRIPT_DIR/prometheus-stack/prometheus.yaml"
+kubectl apply -f "$SCRIPT_DIR/prometheus-stack/grafana.yaml"
 
-# Install Loki stack
-helm upgrade --install loki grafana/loki-stack -n "$MON_NS" --create-namespace --set grafana.enabled=false --set prometheus.enabled=false --values kube-state/$VALUES_ENV/loki/values.yaml || true
-helm upgrade --install promtail grafana/promtail -n "$MON_NS" --set loki.serviceName=loki --values kube-state/$VALUES_ENV/promtail/values.yaml || true
+echo ""
+echo "Waiting for databases to be ready..."
+kubectl wait --for=condition=available --timeout=120s deployment/postgresql -n databases || true
+kubectl wait --for=condition=available --timeout=120s deployment/mongodb -n databases || true
+kubectl wait --for=condition=available --timeout=120s deployment/rabbitmq -n databases || true
 
-#kubectl -n "$MON_NS" wait --for=condition=available --timeout=300s deployment -l app.kubernetes.io/name=grafana || true
+echo ""
+echo "Deploying Hotelier microservices..."
+kubectl apply -f "$SCRIPT_DIR/hotelier-identity-service/identity-service.yaml"
+kubectl apply -f "$SCRIPT_DIR/hotelier-accommodation-service/accommodation-service.yaml"
+kubectl apply -f "$SCRIPT_DIR/hotelier-availability-service/availability-service.yaml"
+kubectl apply -f "$SCRIPT_DIR/hotelier-reservation-service/reservation-service.yaml"
+kubectl apply -f "$SCRIPT_DIR/hotelier-rating-service/rating-service.yaml"
+kubectl apply -f "$SCRIPT_DIR/hotelier-search-service/search-service.yaml"
+kubectl apply -f "$SCRIPT_DIR/hotelier-notification-service/notification-service.yaml"
+kubectl apply -f "$SCRIPT_DIR/hotelier-cdn-service/cdn-service.yaml"
 
-# Add databases
-echo "Deploying databases into 'databases' namespace"
-DB_NS="databases"
+echo ""
+echo "Deploying ingress..."
+kubectl apply -f "$SCRIPT_DIR/ingress.yaml"
 
-# Add DB Helm repos and install databases (dev-friendly defaults in values files)
-helm repo add bitnami https://charts.bitnami.com/bitnami || true
-helm repo update
-
-helm upgrade --install postgresql bitnami/postgresql -n "$DB_NS" --create-namespace --values kube-state/$VALUES_ENV/postgres/values.yaml || true
-helm upgrade --install mongodb bitnami/mongodb -n "$DB_NS" --create-namespace --values kube-state/$VALUES_ENV/mongo/values.yaml || true
-helm upgrade --install rabbitmq bitnami/rabbitmq -n "$DB_NS" --create-namespace --values kube-state/$VALUES_ENV/rabbitmq/values.yaml || true
-
-# Wait for core DB workloads to become ready (best-effort)
-# kubectl -n "$DB_NS" wait --for=condition=available --timeout=300s deployment -l app.kubernetes.io/name=postgresql || true
-# kubectl -n "$DB_NS" wait --for=condition=ready --timeout=300s statefulset -l app.kubernetes.io/instance=mongodb || true
-# kubectl -n "$DB_NS" wait --for=condition=ready --timeout=300s statefulset -l app.kubernetes.io/instance=rabbitmq || true
-
-
-echo "Deploying Hotelier services to namespace: $NS"
-
-declare -a services=(
-	"accommodation-service:hotelier-accommodation-service"
-	"availability-service:hotelier-availability-service"
-	"cdn-service:hotelier-cdn-service"
-	"identity-service:hotelier-identity-service"
-	"notification-service:hotelier-notification-service"
-	"rating-service:hotelier-rating-service"
-	"reservation-service:hotelier-reservation-service"
-	"search-service:hotelier-search-service"
-)
-
-for entry in "${services[@]}"; do
-	release="${entry%%:*}"
-	chartname="${entry#*:}"
-	chartpath="$HELM_CHARTS_DIR/$chartname"
-	valuesfile="kube-state/$VALUES_ENV/$chartname/values.yaml"
-
-	if [ ! -d "$chartpath" ]; then
-		echo "Warning: chart path not found: $chartpath — attempting to continue (chart may be a repo/chart)"
-	fi
-
-	if [ ! -f "$valuesfile" ]; then
-		echo "Note: values file not found: $valuesfile — deploying with chart defaults"
-		helm upgrade --install "$release" "$chartpath" -n "$NS" --create-namespace
-	else
-		helm upgrade --install "$release" "$chartpath" -n "$NS" --create-namespace --values "$valuesfile"
-	fi
-done
-
-echo "Setup complete"
+echo ""
+echo "============================================"
+echo "Setup complete!"
+echo "============================================"
+echo ""
+echo "Access services:"
+echo "  - Hotelier API: http://hotelier.local/{service}"
+echo "  - Grafana: http://monitoring.local/grafana (admin/admin)"
+echo "  - Prometheus: http://monitoring.local/prometheus"
+echo "  - RabbitMQ: http://rabbitmq.local (guest/guest)"
+echo ""
+echo "Add to /etc/hosts:"
+echo "  127.0.0.1 hotelier.local monitoring.local rabbitmq.local"
+echo ""
+echo "Check status:"
+echo "  kubectl get pods -n hotelier"
+echo "  kubectl get pods -n databases"
+echo "  kubectl get pods -n observability"
+echo ""
