@@ -25,6 +25,10 @@ kubectl apply -f "$SCRIPT_DIR/prometheus-stack/prometheus.yaml"
 kubectl apply -f "$SCRIPT_DIR/prometheus-stack/grafana.yaml"
 
 echo ""
+echo "Installing ServiceMonitor CRD (required by Helm charts)..."
+kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.75.0/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml
+
+echo ""
 echo "Waiting for databases to be ready..."
 kubectl wait --for=condition=available --timeout=120s deployment/postgresql -n databases || true
 kubectl wait --for=condition=available --timeout=120s deployment/mongodb -n databases || true
