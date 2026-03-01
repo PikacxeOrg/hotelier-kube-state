@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: localhost:30500/hotelier-frontend
   tag: "latest"
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 resources:
   requests:
@@ -16,6 +16,7 @@ resources:
 env:
   BACKEND_PORT: "80"
   DNS_RESOLVER: "10.96.0.10"
+  SERVICE_SUFFIX: ".hotelier.svc.cluster.local"
 
 service:
   type: ClusterIP

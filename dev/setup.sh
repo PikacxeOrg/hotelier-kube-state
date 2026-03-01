@@ -64,16 +64,6 @@ echo ""
 echo "Deploying ingress..."
 kubectl apply -f "$SCRIPT_DIR/ingress.yaml"
 
-# Enable NGINX ingress controller
-echo ""
-echo "Enabling ingress addon..."
-minikube addons enable ingress 2>/dev/null || true
-
-# Patch ingress service to LoadBalancer for tunnel compatibility
-echo "Patching ingress controller to LoadBalancer..."
-kubectl patch svc ingress-nginx-controller -n ingress-nginx \
-    -p '{"spec":{"type":"LoadBalancer"}}' 2>/dev/null || true
-
 echo ""
 echo "============================================"
 echo "Setup complete!"

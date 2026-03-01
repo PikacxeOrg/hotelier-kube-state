@@ -25,7 +25,7 @@ service:
   targetPort: 8080
 
 ingress:
-  enabled: true
+  enabled: false
   className: "nginx"
   hosts:
     - host: "minikube.local"
@@ -48,5 +48,5 @@ readinessProbe:
   periodSeconds: 5
 
 serviceMonitor:
-  enabled: true
+  enabled: false
   interval: 30s
