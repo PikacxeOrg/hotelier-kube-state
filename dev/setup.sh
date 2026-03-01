@@ -22,6 +22,14 @@ kubectl apply -f "$SCRIPT_DIR/rabbitmq/rabbitmq.yaml"
 echo ""
 echo "Deploying monitoring stack..."
 kubectl apply -f "$SCRIPT_DIR/prometheus-stack/prometheus.yaml"
+
+DASHBOARDS_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")/etc/grafana/dashboards"
+kubectl create configmap grafana-dashboards \
+  --from-file="$DASHBOARDS_DIR/services-overview.json" \
+  --from-file="$DASHBOARDS_DIR/service-detail.json" \
+  --from-file="$DASHBOARDS_DIR/logs-explorer.json" \
+  -n observability --dry-run=client -o yaml | kubectl apply -f -
+
 kubectl apply -f "$SCRIPT_DIR/prometheus-stack/grafana.yaml"
 
 echo ""
