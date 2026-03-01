@@ -64,19 +64,34 @@ echo ""
 echo "Deploying ingress..."
 kubectl apply -f "$SCRIPT_DIR/ingress.yaml"
 
+# Enable NGINX ingress controller
+echo ""
+echo "Enabling ingress addon..."
+minikube addons enable ingress 2>/dev/null || true
+
+# Patch ingress service to LoadBalancer for tunnel compatibility
+echo "Patching ingress controller to LoadBalancer..."
+kubectl patch svc ingress-nginx-controller -n ingress-nginx \
+    -p '{"spec":{"type":"LoadBalancer"}}' 2>/dev/null || true
+
 echo ""
 echo "============================================"
 echo "Setup complete!"
 echo "============================================"
 echo ""
-echo "Access services:"
-echo "  - Hotelier API: http://hotelier.local/{service}"
-echo "  - Grafana: http://monitoring.local/grafana (admin/admin)"
-echo "  - Prometheus: http://monitoring.local/prometheus"
-echo "  - RabbitMQ: http://rabbitmq.local (guest/guest)"
+echo "Access the frontend:"
+echo "  1. Add to /etc/hosts (first time only):"
+echo "     sudo sh -c 'echo \"127.0.0.1 hotelier.local monitoring.local rabbitmq.local\" >> /etc/hosts'"
 echo ""
-echo "Add to /etc/hosts:"
-echo "  127.0.0.1 hotelier.local monitoring.local rabbitmq.local"
+echo "  2. Port-forward the ingress controller:"
+echo "     kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8080:80"
+echo ""
+echo "  3. Open http://hotelier.local:8080"
+echo ""
+echo "Other dashboards (via port-forward):"
+echo "  Grafana:    kubectl port-forward -n observability svc/grafana 3000:3000"
+echo "  Prometheus: kubectl port-forward -n observability svc/prometheus 9090:9090"
+echo "  RabbitMQ:   kubectl port-forward -n databases svc/rabbitmq 15672:15672"
 echo ""
 echo "Check status:"
 echo "  kubectl get pods -n hotelier"
