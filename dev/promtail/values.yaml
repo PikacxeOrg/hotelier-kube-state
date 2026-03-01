@@ -1,7 +1,4 @@
-# Development-friendly overrides for Promtail
-daemonset:
-  enabled: false
-replicaCount: 1
+# Promtail v6.x chart overrides for dev / minikube
 resources:
   requests:
     memory: "64Mi"
@@ -9,9 +6,7 @@ resources:
   limits:
     memory: "128Mi"
     cpu: "200m"
-serviceAccount:
-  create: true
-  name: promtail-dev
 
 config:
-  clients: []
+  clients:
+    - url: http://loki.observability.svc.cluster.local:3100/loki/api/v1/push

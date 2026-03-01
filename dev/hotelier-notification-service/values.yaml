@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: hotelier-accommodation-service
+  repository: localhost:30500/hotelier-notification-service
   tag: "latest"
   pullPolicy: IfNotPresent
 
@@ -16,7 +16,7 @@ resources:
 env:
   ASPNETCORE_ENVIRONMENT: "Development"
   ASPNETCORE_URLS: "http://+:8080"
-  ConnectionStrings__Mongo: "mongodb://hotelier:hotelier@mongodb.databases.svc.cluster.local:27017/hotelier_notification"
+  ConnectionStrings__Mongo: "mongodb://hotelier:hotelier@mongodb.databases.svc.cluster.local:27017/hotelier_notification?authSource=admin"
   Rabbit__Host: "rabbitmq.databases.svc.cluster.local"
 
 service:
@@ -25,6 +25,8 @@ service:
   targetPort: 8080
 
 ingress:
+  enabled: true
+  className: "nginx"
   hosts:
     - host: "minikube.local"
       paths:

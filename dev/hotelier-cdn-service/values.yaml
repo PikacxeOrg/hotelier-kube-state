@@ -1,7 +1,7 @@
 # Simplified - only needs RabbitMQ
 replicaCount: 1
 image:
-  repository: hotelier-cdn-service
+  repository: localhost:30500/hotelier-cdn-service
   tag: "latest"
   pullPolicy: IfNotPresent
 

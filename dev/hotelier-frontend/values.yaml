@@ -1,0 +1,30 @@
+replicaCount: 1
+
+image:
+  repository: localhost:30500/hotelier-frontend
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
+
+env:
+  BACKEND_PORT: "80"
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: "hotelier.local"
+      paths:
+        - path: "/"
+          pathType: Prefix

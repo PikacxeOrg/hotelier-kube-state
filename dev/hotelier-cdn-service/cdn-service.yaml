@@ -20,28 +20,38 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       containers:
-      - name: cdn-service
-        image: hotelier-cdn-service:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8080
-          name: http
-        env:
-        - name: ASPNETCORE_ENVIRONMENT
-          value: "Development"
-        - name: ASPNETCORE_URLS
-          value: "http://+:8080"
-        - name: MongoDB__ConnectionString
-          value: "mongodb://mongodb.databases.svc.cluster.local:27017"
-        - name: MongoDB__Database
-          value: "hotelier_cdn"
-        resources:
-          requests:
-            cpu: 250m
-            memory: 256Mi
-          limits:
-            cpu: 1000m
-            memory: 1Gi
+        - name: cdn-service
+          image: localhost:30500/hotelier-cdn-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
+            - name: Rabbit__Host
+              value: "rabbitmq.databases.svc.cluster.local"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -52,6 +62,6 @@ spec:
   selector:
     app: cdn-service
   ports:
-  - port: 80
-    targetPort: 8080
+    - port: 80
+      targetPort: 8080
   type: ClusterIP

@@ -1,34 +1,55 @@
-replicaCount: 1
-persistence:
-  enabled: false
-  size: 2Gi
-  storageClassName: ""
-resources:
-  requests:
-    memory: "256Mi"
-    cpu: "100m"
-  limits:
-    memory: "512Mi"
-    cpu: "500m"
+# Loki v6.x chart – SingleBinary mode for dev / minikube
+deploymentMode: SingleBinary
 
-config:
-  table_manager:
-    retention_deletes_enabled: false
-  ingester:
-    lifecycler:
-      ring:
-        kvstore:
-          store: inmemory
-  schema_config:
-    configs: []
-grafana:
-  datasources:
-    datasources.yaml:
-      apiVersion: 1
-      datasources:
-      - name: Loki
-        type: loki
-        access: proxy
-        orgId: 1
-        url: http://loki:3100
-        isDefault: false  # ← CRITICAL
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# Disable distributed components
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+
+# Filesystem-only storage (no S3/GCS)
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+
+# Disable minio sub-chart (not needed with filesystem)
+minio:
+  enabled: false
+
+# Disable gateway (not needed for dev)
+gateway:
+  enabled: false
+
+# Disable chunksCache, resultsCache, etc.
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+# Test pod not needed
+test:
+  enabled: false

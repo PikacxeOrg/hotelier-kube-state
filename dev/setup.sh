@@ -25,6 +25,13 @@ kubectl apply -f "$SCRIPT_DIR/prometheus-stack/prometheus.yaml"
 kubectl apply -f "$SCRIPT_DIR/prometheus-stack/grafana.yaml"
 
 echo ""
+echo "Deploying Loki and Promtail..."
+helm repo add grafana https://grafana.github.io/helm-charts 2>/dev/null || true
+helm repo update grafana 2>/dev/null || true
+helm upgrade --install loki grafana/loki -f "$SCRIPT_DIR/loki/values.yaml" -n observability
+helm upgrade --install promtail grafana/promtail -f "$SCRIPT_DIR/promtail/values.yaml" -n observability
+
+echo ""
 echo "Installing ServiceMonitor CRD (required by Helm charts)..."
 kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.75.0/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml
 
@@ -35,6 +42,11 @@ kubectl wait --for=condition=available --timeout=120s deployment/mongodb -n data
 kubectl wait --for=condition=available --timeout=120s deployment/rabbitmq -n databases || true
 
 HELM_CHARTS_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")/helm-charts"
+SECRETS_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")/etc/kubernetes/secrets"
+
+echo ""
+echo "Applying secrets..."
+kubectl apply -f "$SECRETS_DIR/hotelier-secrets.yaml"
 
 echo ""
 echo "Deploying Hotelier microservices with Helm..."
@@ -46,6 +58,7 @@ helm upgrade --install rating-service        "$HELM_CHARTS_DIR/hotelier-rating-s
 helm upgrade --install search-service        "$HELM_CHARTS_DIR/hotelier-search-service"        -f "$SCRIPT_DIR/hotelier-search-service/values.yaml"        -n hotelier
 helm upgrade --install notification-service  "$HELM_CHARTS_DIR/hotelier-notification-service"  -f "$SCRIPT_DIR/hotelier-notification-service/values.yaml"  -n hotelier
 helm upgrade --install cdn-service           "$HELM_CHARTS_DIR/hotelier-cdn-service"           -f "$SCRIPT_DIR/hotelier-cdn-service/values.yaml"           -n hotelier
+helm upgrade --install frontend              "$HELM_CHARTS_DIR/hotelier-frontend"              -f "$SCRIPT_DIR/hotelier-frontend/values.yaml"              -n hotelier
 
 echo ""
 echo "Deploying ingress..."

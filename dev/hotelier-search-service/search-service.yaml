@@ -20,30 +20,40 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       containers:
-      - name: search-service
-        image: hotelier-search-service:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8080
-          name: http
-        env:
-        - name: ASPNETCORE_ENVIRONMENT
-          value: "Development"
-        - name: ASPNETCORE_URLS
-          value: "http://+:8080"
-        - name: MongoDB__ConnectionString
-          value: "mongodb://mongodb.databases.svc.cluster.local:27017"
-        - name: MongoDB__Database
-          value: "hotelier_search"
-        - name: Rabbit__Host
-          value: "rabbitmq.databases.svc.cluster.local"
-        resources:
-          requests:
-            cpu: 250m
-            memory: 256Mi
-          limits:
-            cpu: 1000m
-            memory: 1Gi
+        - name: search-service
+          image: localhost:30500/hotelier-search-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
+            - name: ConnectionStrings__Mongo
+              value: "mongodb://hotelier:hotelier@mongodb.databases.svc.cluster.local:27017/hotelier_search?authSource=admin"
+            - name: Rabbit__Host
+              value: "rabbitmq.databases.svc.cluster.local"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -54,6 +64,6 @@ spec:
   selector:
     app: search-service
   ports:
-  - port: 80
-    targetPort: 8080
+    - port: 80
+      targetPort: 8080
   type: ClusterIP

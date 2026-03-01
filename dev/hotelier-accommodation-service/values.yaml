@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: hotelier-accommodation-service
+  repository: localhost:30500/hotelier-accommodation-service
   tag: "latest"
   pullPolicy: IfNotPresent
 
