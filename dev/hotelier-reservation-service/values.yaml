@@ -17,6 +17,7 @@ env:
   ASPNETCORE_ENVIRONMENT: "Development"
   ASPNETCORE_URLS: "http://+:8080"
   ConnectionStrings__Default: "Host=postgresql.databases.svc.cluster.local;Database=hotelier_reservation;Username=hotelier;Password=hotelier;Port=5432"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger.observability.svc.cluster.local:4317"
   Rabbit__Host: "rabbitmq.databases.svc.cluster.local"
 
 service:

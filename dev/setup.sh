@@ -28,9 +28,15 @@ kubectl create configmap grafana-dashboards \
   --from-file="$DASHBOARDS_DIR/services-overview.json" \
   --from-file="$DASHBOARDS_DIR/service-detail.json" \
   --from-file="$DASHBOARDS_DIR/logs-explorer.json" \
+  --from-file="$DASHBOARDS_DIR/os-metrics.json" \
+  --from-file="$DASHBOARDS_DIR/container-metrics.json" \
+  --from-file="$DASHBOARDS_DIR/web-traffic.json" \
+  --from-file="$DASHBOARDS_DIR/tracing.json" \
   -n observability --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl apply -f "$SCRIPT_DIR/prometheus-stack/grafana.yaml"
+kubectl apply -f "$SCRIPT_DIR/prometheus-stack/jaeger.yaml"
+kubectl apply -f "$SCRIPT_DIR/prometheus-stack/node-exporter.yaml"
 
 echo ""
 echo "Deploying Loki and Promtail..."
@@ -89,6 +95,7 @@ echo ""
 echo "Other dashboards (via port-forward):"
 echo "  Grafana:    kubectl port-forward -n observability svc/grafana 3000:3000"
 echo "  Prometheus: kubectl port-forward -n observability svc/prometheus 9090:9090"
+echo "  Jaeger:     kubectl port-forward -n observability svc/jaeger 16686:16686"
 echo "  RabbitMQ:   kubectl port-forward -n databases svc/rabbitmq 15672:15672"
 echo ""
 echo "Check status:"

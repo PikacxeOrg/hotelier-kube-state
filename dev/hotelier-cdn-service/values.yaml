@@ -16,6 +16,7 @@ resources:
 env:
   ASPNETCORE_ENVIRONMENT: "Development"
   ASPNETCORE_URLS: "http://+:8080"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger.observability.svc.cluster.local:4317"
   Rabbit__Host: "rabbitmq.databases.svc.cluster.local"
 
 service:
