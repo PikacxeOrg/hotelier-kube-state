@@ -1,3 +1,147 @@
+# Routes all application traffic in the hotelier namespace.
+# Path-rewriting annotations are used where the frontend URL path differs
+# from the backend controller prefix (identity, accommodations, cdn).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hotelier-app-ingress
+  namespace: hotelier
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: hotelier.local
+      http:
+        paths:
+          # SPA — must be last (most specific paths take priority)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+---
+# Identity: /api/identity/auth/login → /api/auth/login
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hotelier-identity-ingress
+  namespace: hotelier
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /api/$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: hotelier.local
+      http:
+        paths:
+          - path: /api/identity(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: identity-service
+                port:
+                  number: 80
+---
+# Accommodations: /api/accommodations/123 → /api/accommodation/123
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hotelier-accommodations-ingress
+  namespace: hotelier
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /api/accommodation/$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: hotelier.local
+      http:
+        paths:
+          - path: /api/accommodations(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: accommodation-service
+                port:
+                  number: 80
+---
+# CDN: /api/cdn/file.jpg → /api/assets/file.jpg
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hotelier-cdn-ingress
+  namespace: hotelier
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # CDN static files are served at /assets/<id> inside the pod,
+    # so the rewrite target must strip only the /api/cdn prefix.
+    nginx.ingress.kubernetes.io/rewrite-target: /assets/$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: hotelier.local
+      http:
+        paths:
+          - path: /api/cdn(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: cdn-service
+                port:
+                  number: 80
+---
+# Passthrough routes (frontend path == backend path)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hotelier-api-ingress
+  namespace: hotelier
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: hotelier.local
+      http:
+        paths:
+          - path: /api/availability/
+            pathType: Prefix
+            backend:
+              service:
+                name: availability-service
+                port:
+                  number: 80
+          - path: /api/reservations/
+            pathType: Prefix
+            backend:
+              service:
+                name: reservation-service
+                port:
+                  number: 80
+          - path: /api/ratings/
+            pathType: Prefix
+            backend:
+              service:
+                name: rating-service
+                port:
+                  number: 80
+          - path: /api/notifications/
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 80
+          - path: /api/search/
+            pathType: Prefix
+            backend:
+              service:
+                name: search-service
+                port:
+                  number: 80
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

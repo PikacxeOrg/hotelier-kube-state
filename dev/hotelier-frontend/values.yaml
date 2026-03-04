@@ -23,10 +23,5 @@ service:
   port: 80
 
 ingress:
-  enabled: true
-  className: "nginx"
-  hosts:
-    - host: "hotelier.local"
-      paths:
-        - path: "/"
-          pathType: Prefix
+  # Disabled — routing is handled centrally by kube-state/dev/ingress.yaml
+  enabled: false

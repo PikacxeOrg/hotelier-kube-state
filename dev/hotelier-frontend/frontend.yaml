@@ -22,9 +22,7 @@ spec:
           ports:
             - containerPort: 80
               name: http
-          env:
-            - name: BACKEND_PORT
-              value: "80"
+          env: []
           readinessProbe:
             httpGet:
               path: /
