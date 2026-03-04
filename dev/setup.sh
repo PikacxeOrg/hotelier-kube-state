@@ -76,6 +76,9 @@ helm upgrade --install frontend              "$HELM_CHARTS_DIR/hotelier-frontend
 
 echo ""
 echo "Deploying ingress..."
+
+# Remove any stale per-chart ingresses before applying the central ingress.yaml.
+kubectl delete ingress frontend -n hotelier --ignore-not-found=true
 kubectl apply -f "$SCRIPT_DIR/ingress.yaml"
 
 echo ""
