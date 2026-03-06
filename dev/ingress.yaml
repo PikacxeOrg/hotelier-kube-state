@@ -69,7 +69,7 @@ spec:
                 port:
                   number: 80
 ---
-# CDN: /api/cdn/file.jpg → /api/assets/file.jpg
+# CDN: /cdn-assets/file.jpg → /cdn-assets/file.jpg
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -77,16 +77,24 @@ metadata:
   namespace: hotelier
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
-    # CDN static files are served at /assets/<id> inside the pod,
+    # CDN static files are served at /cdn-assets/<id> inside the pod,
     # so the rewrite target must strip only the /api/cdn prefix.
-    nginx.ingress.kubernetes.io/rewrite-target: /assets/$2
+    nginx.ingress.kubernetes.io/rewrite-target: /cdn-assets/$2
 spec:
   ingressClassName: nginx
   rules:
     - host: hotelier.local
       http:
         paths:
-          - path: /api/cdn(/|$)(.*)
+          # Uploads: do not rewrite, pass through
+          - path: /api/cdn/upload
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: cdn-service
+                port:
+                  number: 80
+          - path: /cdn-assets/
             pathType: ImplementationSpecific
             backend:
               service:
@@ -100,6 +108,8 @@ kind: Ingress
 metadata:
   name: hotelier-api-ingress
   namespace: hotelier
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
 spec:
   ingressClassName: nginx
   rules:
@@ -113,7 +123,7 @@ spec:
                 name: availability-service
                 port:
                   number: 80
-          - path: /api/reservations/
+          - path: /api/reservations
             pathType: Prefix
             backend:
               service:
@@ -127,18 +137,25 @@ spec:
                 name: rating-service
                 port:
                   number: 80
-          - path: /api/notifications/
+          - path: /api/notifications
             pathType: Prefix
             backend:
               service:
                 name: notification-service
                 port:
                   number: 80
-          - path: /api/search/
+          - path: /api/search
             pathType: Prefix
             backend:
               service:
                 name: search-service
+                port:
+                  number: 80
+          - path: /api/cdn
+            pathType: Prefix
+            backend:
+              service:
+                name: cdn-service
                 port:
                   number: 80
 ---

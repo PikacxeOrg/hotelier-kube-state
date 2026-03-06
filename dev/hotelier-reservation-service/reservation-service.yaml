@@ -35,6 +35,10 @@ spec:
               value: "Host=postgresql.databases.svc.cluster.local;Database=hotelier_reservation;Username=hotelier;Password=hotelier;Port=5432"
             - name: Rabbit__Host
               value: "rabbitmq.databases.svc.cluster.local"
+            - name: Services__Accommodation
+              value: "http://accommodation-service:80"
+            - name: Services__Availability
+              value: "http://availability-service:80"
           readinessProbe:
             httpGet:
               path: /health
