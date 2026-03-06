@@ -75,18 +75,12 @@ kind: Ingress
 metadata:
   name: hotelier-cdn-ingress
   namespace: hotelier
-  annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    # CDN static files are served at /cdn-assets/<id> inside the pod,
-    # so the rewrite target must strip only the /api/cdn prefix.
-    nginx.ingress.kubernetes.io/rewrite-target: /cdn-assets/$2
 spec:
   ingressClassName: nginx
   rules:
     - host: hotelier.local
       http:
         paths:
-          # Uploads: do not rewrite, pass through
           - path: /api/cdn/upload
             pathType: ImplementationSpecific
             backend:
